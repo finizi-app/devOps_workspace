@@ -141,7 +141,7 @@ docker build -t b4b_backend:production . -f Dockerfile.backend
 docker build -t b4b_frontend:production . -f ./frontend/Dockerfile \
   --build-arg NEXT_PUBLIC_API_BASE_URL=https://admin.prod.finizi.ai/backend \
   --build-arg API_URL_INTERNAL=http://app:8000 \
-  --build-arg NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyA4N-_dVCbW-ipdtTqfZL4Ks_wKFN9C5JI \
+  --build-arg NEXT_PUBLIC_FIREBASE_API_KEY=${FIREBASE_API_KEY} \
   --build-arg NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=finizi-ai.firebaseapp.com \
   --build-arg NEXT_PUBLIC_FIREBASE_PROJECT_ID=finizi-ai \
   --build-arg NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=finizi-ai.appspot.com \
