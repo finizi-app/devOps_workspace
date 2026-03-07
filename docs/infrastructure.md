@@ -224,6 +224,14 @@ Stored in Key Vault as base64:
 - `GCS-CREDENTIALS-BASE64`
 - `FIREBASE-CREDENTIALS-BASE64`
 
+### IAM Security (2026-03-07)
+**Issue:** `firebase-adminsdk-fbsvc` had project-level `roles/iam.serviceAccountTokenCreator` - could impersonate any SA including owner-level SAs.
+
+**Fix:** Added condition to limit TokenCreator to only `b4b-finizi-app` SA:
+```
+condition: resource.name.endsWith('b4b-finizi-app')
+```
+
 ---
 
 ## Network Security
