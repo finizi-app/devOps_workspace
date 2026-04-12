@@ -2,6 +2,8 @@
 
 Azure and GCloud infrastructure details for Finizi deployments.
 
+- **DigitalOcean** → [infrastructure-digitalocean.md](infrastructure-digitalocean.md)
+
 ---
 
 ## Azure Resources

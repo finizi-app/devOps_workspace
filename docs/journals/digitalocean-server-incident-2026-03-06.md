@@ -73,7 +73,7 @@ Mar 1 05:17 UTC — kswpad miner binary written to /usr/lib/systemd/system/kswpa
 - SSH Port: `2222` (port 22 still active but use 2222)
 - SSH User: `deploy` (sudo)
 - SSH Key: `~/.ssh/id_ed25519` (MacBook & Thinkpad X1 Extreme)
-- Root password (rotated 2026-03-06): `nyPglkFiR5jQF3TDh20MRYw5`
+- Root password (rotated 2026-04-11): `Kafe@20188`
 - Deploy password: `Deploy2026!`
 - Connect: `ssh -p 2222 -i ~/.ssh/id_ed25519 deploy@146.190.104.85`
 
