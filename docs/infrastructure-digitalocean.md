@@ -75,7 +75,7 @@ ssh -p 2222 -i ~/.ssh/id_ed25519 deploy@146.190.104.85
 | Odoo | 5 worker processes, ~1.3GB RAM total |
 | nginx | Reverse proxy (ports 80/443 → 8069) |
 | SSH | ports 22 + 2222 |
-| fail2ban | Monitoring SSH (maxretry: 3, 24h ban) |
+| fail2ban | **DISABLED 2026-06-07** (was locking out the operator; soft plan: re-enable with per-IP whitelist) |
 
 ### Listening Ports
 
@@ -166,20 +166,20 @@ If SSH is inaccessible:
 | Region | sgp1 |
 | SSH Key | `trunghuynh-devops` (`~/.ssh/id_ed25519`) |
 | Service | tinyproxy on port 8443 |
-| Purpose | Temporary — routes Odoo HTTPS requests to VNPay |
+| Purpose | **DEPRECATED 2026-06-07** — DO hypervisor outbound block is lifted. Direct outbound from Odoo droplet now works. |
 
 ### Config
 - `/etc/tinyproxy/tinyproxy.conf` — Port 8443, Allow only `146.190.104.85`
-- Odoo docker-compose has `HTTP_PROXY`/`HTTPS_PROXY` pointing to this proxy
+- ~~Odoo docker-compose has `HTTP_PROXY`/`HTTPS_PROXY` pointing to this proxy~~ — proxy env vars **removed 2026-06-07** from `/opt/bmp/docker-compose.yml`; backup at `/opt/bmp/docker-compose.yml.bak-260607`
 
-### Cleanup (when DO fixes outbound)
-1. Remove proxy env vars from `/opt/bmp/docker-compose.yml`
-2. `doctl compute droplet delete 564429669 --force`
+### Cleanup (run when ready)
+1. ✅ Remove proxy env vars from `/opt/bmp/docker-compose.yml` — done 2026-06-07; container restarted, direct outbound verified (vnpay.vn: 200 in 399ms, faster than via proxy)
+2. ⏳ `doctl compute droplet delete 564429669 --force` — pending operator decision (saves $4-6/mo)
 
 ---
 
 ## Known Issues (2026-04-12)
 
-- **Outbound TCP broken on Odoo droplet** — DO infrastructure issue. Ports 80/443 blocked at hypervisor level. DO support ticket needed. Workaround: vnpay-proxy droplet.
+- ~~**Outbound TCP broken on Odoo droplet** — DO infrastructure issue. Ports 80/443 blocked at hypervisor level. DO support ticket needed. Workaround: vnpay-proxy droplet.~~ **RESOLVED 2026-06-07** — direct outbound now works; vnpay-proxy workaround retired.
 - **Docker disk waste** — 15GB reclaimable (unused images/volumes). Run `docker system prune -a` when safe.
 - **No swap** — consider adding swap as safety for memory spikes.
