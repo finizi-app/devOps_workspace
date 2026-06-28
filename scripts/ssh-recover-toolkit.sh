@@ -8,11 +8,18 @@
 #
 # USAGE
 #   From Recovery Console (https://cloud.digitalocean.com/droplets/518827273/access):
-#     sudo bash /usr/local/sbin/ssh-recover
+#     sudo bash /root/ssh-recover            # primary location (Recovery ISO root=/root)
+#     sudo bash /usr/local/sbin/ssh-recover  # alt location (sbin, in PATH)
 #   Or non-interactive (no prompts):
-#     sudo bash /usr/local/sbin/ssh-recover --yes
+#     sudo bash /root/ssh-recover --yes
 #   Or with a custom public key file:
-#     sudo bash /usr/local/sbin/ssh-recover --key /path/to/authorized_keys
+#     sudo bash /root/ssh-recover --key /path/to/authorized_keys
+#
+# INSTALLED LOCATIONS (synced from scripts/ssh-recover-toolkit.sh in repo)
+#   /root/ssh-recover                            — primary, used from Recovery Console
+#   /usr/local/sbin/ssh-recover                  — in PATH for normal sessions
+#   /usr/local/share/ssh-recover/authorized_keys — baseline keys (2 known public keys)
+#   /usr/local/share/ssh-recover/keys/           — extra key files merged at restore time
 #
 # WHAT IT DOES (each step confirmed unless --yes)
 #   1. Restore /home/deploy/.ssh/authorized_keys from embedded baseline
