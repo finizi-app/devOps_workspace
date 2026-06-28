@@ -22,13 +22,28 @@ Patedeli Odoo ERP server on DigitalOcean.
 | Property | Value |
 |----------|-------|
 | Port | `2222` (primary), `22` (fallback) |
-| User | `deploy` (sudo) |
-| Key | `~/.ssh/id_ed25519` |
-| Root password | `Kafe@20188` (rotated 2026-04-11) |
-| Deploy password | `Deploy2026!` |
+| User | `deploy` (sudo, NOPASSWD) |
+| Auth | **password + key** (both enabled since 2026-06-28) |
+| Primary key | `~/.ssh/patedeli-digitalocean` (ed25519, generated 2026-06-28, fingerprint `5+YH/71U8mGF7XFBmQW/Yf4K3/zegA3Vh24H4rOehk8`) |
+| Legacy key | `ssh-rsa mdrfckr` (still authorized, recommend revoking after migration) |
+| Root password | rotated 2026-06-28 (was `Kafe@20188`) |
+| Deploy password | rotated 2026-06-28 (was `Deploy2026!`) — see 1Password "Patedeli DO Infra" |
 
 ```bash
-ssh -p 2222 -i ~/.ssh/id_ed25519 deploy@146.190.104.85
+# Recommended (key)
+ssh -p 2222 -i ~/.ssh/patedeli-digitalocean deploy@146.190.104.85
+
+# Password (fallback — get from 1Password)
+sshpass -p '<from 1Password>' ssh -p 2222 -o PubkeyAuthentication=no deploy@146.190.104.85
+
+# Or via ~/.ssh/config alias
+#   Host patedeli-do
+#     HostName 146.190.104.85
+#     Port 2222
+#     User deploy
+#     IdentityFile ~/.ssh/patedeli-digitalocean
+#     IdentitiesOnly yes
+# Then: ssh patedeli-do
 ```
 
 ---
@@ -107,15 +122,19 @@ ssh -p 2222 -i ~/.ssh/id_ed25519 deploy@146.190.104.85
 | 2026-03-01 | SSH brute force → root compromised → kinsing/kswpad crypto miner | Cleaned 2026-03-06 |
 | 2026-04-11 | Outbound TCP broken, SSH key lost | Fixed SSH key, nft flush |
 | 2026-04-12 | DO blocked outbound — droplet in DDoS (168.4 Mbps to 103.36.167.70) | Removed `/tmp/.3ef779fef5ff2e9e-00000000.so` malware, kswpad service. DO ticket pending block lift |
+| 2026-06-13 | Metabase RCE (CVE-2021-41277) → root → deploy session → XMRig-style miner (525 threads) via `kthreadadd`/`edac0` | Cleaned 2026-06-28 (see `journals/2026-06-28-crypto-miner-reinfection-3.md`) |
 
 ### Hardening Applied
 
-- Root password rotated
-- Non-root `deploy` user with sudo
-- fail2ban enabled (3 retries, 24h ban)
-- SSH key-only auth
+- Root password rotated (multiple times, latest 2026-06-28)
+- Non-root `deploy` user with sudo (NOPASSWD)
+- fail2ban DISABLED 2026-06-07 (operator decision: re-enable with per-IP whitelist when ready)
+- SSH **password + key** auth (changed 2026-06-28 from key-only after operator request)
 - Port 2222 as primary SSH
 - Attacker IPs removed from firewall: `199.91.220.120`, `118.68.20.93`
+- **2026-06-28**: Metabase vhost (`analytics.patedeli.com`) DISABLED — entry point for re-infection #3
+- **2026-06-28**: n8n vhost (`workflow.patedeli.com` + `flow.finizi.{ai,app}`) DISABLED — service no longer used
+- **2026-06-28**: nginx `000-default-reject` catch-all added — rejects any Host header not matching legit vhost (prevents fallback leak)
 
 ### Pending Actions
 
@@ -141,17 +160,19 @@ If SSH is inaccessible:
 2. Launch **Recovery Console**
 3. Fix SSH keys:
    ```bash
-   # Add key for deploy
-   echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEG19Um4/ZOzhHqo3jEi9PilxoZNtODIWAiGq5wqq+0U trunghuynh@devops" > /home/deploy/.ssh/authorized_keys
+   # Add current primary key for deploy
+   echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICy6EAOLzk6t1BfvlBDEE87ZCVZYDB00dKWdYfqw9zcV patedeli-digitalocean (2026-06-28) trunghuynh@devops" > /home/deploy/.ssh/authorized_keys
    chown -R deploy:deploy /home/deploy/.ssh
    chmod 700 /home/deploy/.ssh && chmod 600 /home/deploy/.ssh/authorized_keys
 
-   # Add key for root
-   echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEG19Um4/ZOzhHqo3jEi9PilxoZNtODIWAiGq5wqq+0U trunghuynh@devops" > /root/.ssh/authorized_keys
+   # Add same key for root (optional, only if you need root SSH)
+   echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICy6EAOLzk6t1BfvlBDEE87ZCVZYDB00dKWdYfqw9zcV patedeli-digitalocean (2026-06-28) trunghuynh@devops" > /root/.ssh/authorized_keys
    chmod 700 /root/.ssh && chmod 600 /root/.ssh/authorized_keys
    ```
 4. Restart sshd: `systemctl restart sshd`
 5. Check nftables: `nft flush ruleset` if blocking
+
+Password fallback (set 2026-06-28): user `deploy`, password in 1Password.
 
 ---
 
@@ -164,7 +185,7 @@ If SSH is inaccessible:
 | IP | `165.245.188.82` |
 | Size | s-1vcpu-1gb ($4/month) |
 | Region | sgp1 |
-| SSH Key | `trunghuynh-devops` (`~/.ssh/id_ed25519`) |
+| SSH Key | `patedeli-digitalocean` (`~/.ssh/patedeli-digitalocean`) — see SSH Access section above |
 | Service | tinyproxy on port 8443 |
 | Purpose | **DEPRECATED 2026-06-07** — DO hypervisor outbound block is lifted. Direct outbound from Odoo droplet now works. |
 
