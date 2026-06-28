@@ -79,9 +79,9 @@ sshpass -p '<from 1Password>' ssh -p 2222 -o PubkeyAuthentication=no deploy@146.
 
 ### Docker Containers
 
-| Container | Status | Ports |
-|-----------|--------|-------|
-| `bmp-web-1` | Running | 8069, 8072 |
+| Container | Status | Ports | Network |
+|-----------|--------|-------|---------|
+| `bmp-web-1` | Running | 8069, 8072 | **`host`** (since 2026-06-28 — see `journals/2026-06-28-erp-down-do-outbound-block.md`) |
 
 ### Non-Docker Services
 
@@ -123,6 +123,7 @@ sshpass -p '<from 1Password>' ssh -p 2222 -o PubkeyAuthentication=no deploy@146.
 | 2026-04-11 | Outbound TCP broken, SSH key lost | Fixed SSH key, nft flush |
 | 2026-04-12 | DO blocked outbound — droplet in DDoS (168.4 Mbps to 103.36.167.70) | Removed `/tmp/.3ef779fef5ff2e9e-00000000.so` malware, kswpad service. DO ticket pending block lift |
 | 2026-06-13 | Metabase RCE (CVE-2021-41277) → root → deploy session → XMRig-style miner (525 threads) via `kthreadadd`/`edac0` | Cleaned 2026-06-28 (see `journals/2026-06-28-crypto-miner-reinfection-3.md`) |
+| 2026-06-28 ~06:00 | DO hypervisor outbound block on Docker bridge IPs (172.18.0.0/16) — Odoo workers can't reach managed Postgres `bmp-postgres-cluster-...ondigitalocean.com:25060`; `erp.patedeli.com` returns 504 | Switched `bmp-web-1` to `network_mode: host` in `/opt/bmp/docker-compose.yml` (see `journals/2026-06-28-erp-down-do-outbound-block.md`) |
 
 ### Hardening Applied
 
@@ -135,6 +136,7 @@ sshpass -p '<from 1Password>' ssh -p 2222 -o PubkeyAuthentication=no deploy@146.
 - **2026-06-28**: Metabase vhost (`analytics.patedeli.com`) DISABLED — entry point for re-infection #3
 - **2026-06-28**: n8n vhost (`workflow.patedeli.com` + `flow.finizi.{ai,app}`) DISABLED — service no longer used
 - **2026-06-28**: nginx `000-default-reject` catch-all added — rejects any Host header not matching legit vhost (prevents fallback leak)
+- **2026-06-28**: Odoo container switched to `network_mode: host` — bypasses DO hypervisor block on Docker bridge IPs (172.18.0.0/16). Backup at `/opt/bmp/docker-compose.yml.bak.20260628-0901`.
 
 ### Pending Actions
 
@@ -187,20 +189,22 @@ Password fallback (set 2026-06-28): user `deploy`, password in 1Password.
 | Region | sgp1 |
 | SSH Key | `patedeli-digitalocean` (`~/.ssh/patedeli-digitalocean`) — see SSH Access section above |
 | Service | tinyproxy on port 8443 |
-| Purpose | **DEPRECATED 2026-06-07** — DO hypervisor outbound block is lifted. Direct outbound from Odoo droplet now works. |
+| Purpose | **DEPRECATED 2026-06-07** — host outbound was working again; vnpay-proxy workaround retired. Re-evaluate if DO applies another outbound block. |
 
 ### Config
 - `/etc/tinyproxy/tinyproxy.conf` — Port 8443, Allow only `146.190.104.85`
 - ~~Odoo docker-compose has `HTTP_PROXY`/`HTTPS_PROXY` pointing to this proxy~~ — proxy env vars **removed 2026-06-07** from `/opt/bmp/docker-compose.yml`; backup at `/opt/bmp/docker-compose.yml.bak-260607`
 
 ### Cleanup (run when ready)
-1. ✅ Remove proxy env vars from `/opt/bmp/docker-compose.yml` — done 2026-06-07; container restarted, direct outbound verified (vnpay.vn: 200 in 399ms, faster than via proxy)
-2. ⏳ `doctl compute droplet delete 564429669 --force` — pending operator decision (saves $4-6/mo)
+1. ✅ Remove proxy env vars from `/opt/bmp/docker-compose.yml` — done 2026-06-07
+2. ⚠️ **2026-06-28 partial regression**: host outbound still works, but **container bridge IPs (172.18.0.0/16) are blocked** by DO hypervisor. Fix: Odoo switched to `network_mode: host` (see `journals/2026-06-28-erp-down-do-outbound-block.md`). vnpay-proxy no longer helps even if re-enabled (it would only fix host-level proxying).
+3. ⏳ `doctl compute droplet delete 564429669 --force` — pending operator decision (saves $4-6/mo)
 
 ---
 
-## Known Issues (2026-04-12)
+## Known Issues
 
-- ~~**Outbound TCP broken on Odoo droplet** — DO infrastructure issue. Ports 80/443 blocked at hypervisor level. DO support ticket needed. Workaround: vnpay-proxy droplet.~~ **RESOLVED 2026-06-07** — direct outbound now works; vnpay-proxy workaround retired.
+- **DO hypervisor filters outbound to Docker bridge IPs (172.18.0.0/16)** — as of 2026-06-28. Host outbound OK; container bridge outbound SYN-ACK dropped. Workaround: `network_mode: host` for Odoo container. DO support ticket recommended to confirm if filter is intentional. See `journals/2026-06-28-erp-down-do-outbound-block.md`.
 - **Docker disk waste** — 15GB reclaimable (unused images/volumes). Run `docker system prune -a` when safe.
 - **No swap** — consider adding swap as safety for memory spikes.
+- **`erp2.patedeli.com` cert EXPIRED** — Feb 28 2026. Certbot renewal failing (`Some challenges have failed` per syslog). Either fix HTTP-01 challenge or `certbot delete --cert-name erp2.patedeli.com` if not needed.
