@@ -25,7 +25,7 @@ Patedeli Odoo ERP server on DigitalOcean.
 | User | `deploy` (sudo, NOPASSWD) |
 | Auth | **password + key** (both enabled since 2026-06-28) |
 | Primary key | `~/.ssh/patedeli-digitalocean` (ed25519, generated 2026-06-28, fingerprint `5+YH/71U8mGF7XFBmQW/Yf4K3/zegA3Vh24H4rOehk8`) |
-| Legacy key | `ssh-rsa mdrfckr` (still authorized, recommend revoking after migration) |
+| ~~Legacy key~~ | ~~`ssh-rsa mdrfckr`~~ **REMOVED 2026-07-01** — confirmed compromised, attacker used it from `136.243.92.210` (DE). Operator must delete the matching private key from `~/.ssh/`, password manager, and any CI/CD configs. |
 | Root password | rotated 2026-06-28 (was `Kafe@20188`) |
 | Deploy password | rotated 2026-06-28 (was `Deploy2026!`) — see 1Password "Patedeli DO Infra" |
 
@@ -124,6 +124,7 @@ sshpass -p '<from 1Password>' ssh -p 2222 -o PubkeyAuthentication=no deploy@146.
 | 2026-04-12 | DO blocked outbound — droplet in DDoS (168.4 Mbps to 103.36.167.70) | Removed `/tmp/.3ef779fef5ff2e9e-00000000.so` malware, kswpad service. DO ticket pending block lift |
 | 2026-06-13 | Metabase RCE (CVE-2021-41277) → root → deploy session → XMRig-style miner (525 threads) via `kthreadadd`/`edac0` | Cleaned 2026-06-28 (see `journals/2026-06-28-crypto-miner-reinfection-3.md`) |
 | 2026-06-28 ~06:00 | DO hypervisor outbound block on Docker bridge IPs (172.18.0.0/16) — Odoo workers can't reach managed Postgres `bmp-postgres-cluster-...ondigitalocean.com:25060`; `erp.patedeli.com` returns 504 | Switched `bmp-web-1` to `network_mode: host` in `/opt/bmp/docker-compose.yml` (see `journals/2026-06-28-erp-down-do-outbound-block.md`) |
+| 2026-06-29 07:56 | Re-infection #4 via stolen RSA key `mdrfckr` (fingerprint `MkYY9qiVsFGBC5WkjoClCkwEFW5iSjcGQF7m4n4H7Cw`) from `136.243.92.210` (DE). Re-deployed miner with new toolchain (`.X212-unix`) + cron | Killed miner, removed `mdrfckr` from `authorized_keys` (see `journals/2026-07-01-crypto-miner-reinfection-4.md`). **CRITICAL**: operator must also delete the private `mdrfckr` key from local `~/.ssh/` and any password manager. |
 
 ### Hardening Applied
 
