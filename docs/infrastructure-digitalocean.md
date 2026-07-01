@@ -23,7 +23,7 @@ Patedeli Odoo ERP server on DigitalOcean.
 |----------|-------|
 | Port | `2222` (primary), `22` (fallback) |
 | User | `deploy` (sudo, NOPASSWD) |
-| Auth | **password + key** (both enabled since 2026-06-28) |
+| Auth | **key-only** since 2026-07-01 (password disabled after `mdrfckr` RSA compromise) |
 | Primary key | `~/.ssh/patedeli-digitalocean` (ed25519, generated 2026-06-28, fingerprint `5+YH/71U8mGF7XFBmQW/Yf4K3/zegA3Vh24H4rOehk8`) |
 | ~~Legacy key~~ | ~~`ssh-rsa mdrfckr`~~ **REMOVED 2026-07-01** — confirmed compromised, attacker used it from `136.243.92.210` (DE). Operator must delete the matching private key from `~/.ssh/`, password manager, and any CI/CD configs. |
 | Root password | rotated 2026-06-28 (was `Kafe@20188`) |
@@ -132,6 +132,7 @@ sshpass -p '<from 1Password>' ssh -p 2222 -o PubkeyAuthentication=no deploy@146.
 - Non-root `deploy` user with sudo (NOPASSWD)
 - fail2ban DISABLED 2026-06-07 (operator decision: re-enable with per-IP whitelist when ready)
 - SSH **password + key** auth (changed 2026-06-28 from key-only after operator request)
+- SSH **key-only** since 2026-07-01 — password disabled after `mdrfckr` RSA compromise (incident #4)
 - Port 2222 as primary SSH
 - Attacker IPs removed from firewall: `199.91.220.120`, `118.68.20.93`
 - **2026-06-28**: Metabase vhost (`analytics.patedeli.com`) DISABLED — entry point for re-infection #3
